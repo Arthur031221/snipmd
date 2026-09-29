@@ -371,8 +371,8 @@ def cmd_doctor(cfg: Config, args: argparse.Namespace) -> int:
         print(f"\nconfig: {config.config_path()}")
         if sys.platform == "darwin":
             print(
-                "permissions: the menu bar hotkey needs Input Monitoring, the capture needs "
-                "Screen Recording.\nGrant both to your terminal or Python in System Settings, "
+                "permissions: the hotkey needs Accessibility (or Input Monitoring) and the\n"
+                "capture needs Screen Recording. Grant both to your terminal in System Settings,\n"
                 "Privacy and Security."
             )
     return 0 if report["ready"] else 1
