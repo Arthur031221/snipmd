@@ -103,14 +103,22 @@ class Engine:
         return be.name
 
     def run(self, image: Path, mode: str | None = None) -> Result:
+        """Recognise one image. ``seconds`` excludes loading the model.
+
+        The menu bar app and the server load the model once at start, so the
+        time that matters per snip is everything after that.
+        """
         mode = mode or self.cfg.mode
         if mode not in MODES:
             raise InputError(f"unknown mode '{mode}'. Use one of: {', '.join(MODES)}")
+        use_vision = mode == "text" and self.cfg.text_engine == "vision" and vision.available()
+        if not use_vision:
+            self.backend.load()
         start = time.perf_counter()
         with tempfile.TemporaryDirectory(prefix="snipmd-") as tmp:
             prepared = prepare_image(Path(image), Path(tmp))
 
-            if mode == "text" and self.cfg.text_engine == "vision" and vision.available():
+            if use_vision:
                 try:
                     raw = vision.recognize(prepared)
                     text = postprocess.collapse_whitespace(raw)
