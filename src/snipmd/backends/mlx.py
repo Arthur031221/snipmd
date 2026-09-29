@@ -1,0 +1,96 @@
+"""MLX backend. Runs GLM-OCR in process through mlx-vlm on Apple Silicon."""
+
+from __future__ import annotations
+
+import importlib.util
+import threading
+from pathlib import Path
+
+from snipmd.backends import BackendError, BackendUnavailable, is_apple_silicon
+
+
+def _mlx_vlm_installed() -> bool:
+    return importlib.util.find_spec("mlx_vlm") is not None
+
+
+class MlxBackend:
+    name = "mlx"
+
+    def __init__(self, model: str):
+        self.model_id = model
+        self._model = None
+        self._processor = None
+        self._config = None
+        self._lock = threading.Lock()
+
+    def _local_path(self) -> Path | None:
+        path = Path(self.model_id).expanduser()
+        if path.is_dir() and (path / "config.json").exists():
+            return path
+        return None
+
+    def is_downloaded(self) -> bool:
+        if self._local_path():
+            return True
+        try:
+            from huggingface_hub import try_to_load_from_cache
+        except ImportError:
+            return False
+        found = try_to_load_from_cache(self.model_id, "model.safetensors")
+        return isinstance(found, str)
+
+    def can_download(self) -> bool:
+        return is_apple_silicon() and _mlx_vlm_installed()
+
+    def status(self) -> tuple[bool, str]:
+        if not is_apple_silicon():
+            return False, "needs a Mac with Apple Silicon"
+        if not _mlx_vlm_installed():
+            return False, "mlx-vlm is not installed (pip install mlx-vlm)"
+        if not self.is_downloaded():
+            return False, f"{self.model_id} not downloaded yet. Run `snipmd pull`."
+        return True, self.model_id
+
+    def pull(self) -> Path:
+        if self._local_path():
+            return self._local_path()  # type: ignore[return-value]
+        from huggingface_hub import snapshot_download
+
+        return Path(snapshot_download(self.model_id))
+
+    def load(self) -> None:
+        with self._lock:
+            if self._model is not None:
+                return
+            if not is_apple_silicon():
+                raise BackendUnavailable("the mlx backend needs a Mac with Apple Silicon")
+            if not _mlx_vlm_installed():
+                raise BackendUnavailable("mlx-vlm is not installed. Run `pip install mlx-vlm`.")
+            from mlx_vlm import load
+
+            try:
+                self._model, self._processor = load(str(self._local_path() or self.model_id))
+            except Exception as exc:
+                raise BackendError(f"could not load {self.model_id}: {exc}") from exc
+            self._config = getattr(self._model, "config", None)
+
+    def recognize(self, image: Path, prompt: str, max_tokens: int) -> str:
+        self.load()
+        from mlx_vlm import generate
+        from mlx_vlm.prompt_utils import apply_chat_template
+
+        with self._lock:
+            formatted = apply_chat_template(self._processor, self._config, prompt, num_images=1)
+            try:
+                out = generate(
+                    self._model,
+                    self._processor,
+                    formatted,
+                    [str(image)],
+                    max_tokens=max_tokens,
+                    temperature=0.0,
+                    verbose=False,
+                )
+            except Exception as exc:
+                raise BackendError(f"mlx-vlm generation failed: {exc}") from exc
+        return out if isinstance(out, str) else str(getattr(out, "text", out))
