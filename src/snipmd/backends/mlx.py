@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from snipmd.backends import BackendError, BackendUnavailable, is_apple_silicon
@@ -21,7 +21,11 @@ class MlxBackend:
         self._model = None
         self._processor = None
         self._config = None
-        self._lock = threading.Lock()
+        # MLX streams belong to the thread that created them. A model loaded
+        # on one thread and called from another fails with "There is no
+        # Stream(gpu, N) in current thread". The app, the server and the CLI
+        # call from different threads, so every MLX call runs on this one.
+        self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="snipmd-mlx")
 
     def _local_path(self) -> Path | None:
         path = Path(self.model_id).expanduser()
@@ -73,41 +77,45 @@ class MlxBackend:
         return Path(snapshot_download(self.model_id))
 
     def load(self) -> None:
-        with self._lock:
-            if self._model is not None:
-                return
-            if not is_apple_silicon():
-                raise BackendUnavailable("the mlx backend needs a Mac with Apple Silicon")
-            if not _mlx_vlm_installed():
-                raise BackendUnavailable("mlx-vlm is not installed. Run `pip install mlx-vlm`.")
-            from mlx_vlm import load
+        self._worker.submit(self._load).result()
 
-            # Load from the local snapshot when there is one. Passing the repo
-            # id makes huggingface_hub check for updates online on every start.
-            source = self.cached_path() or self.model_id
-            try:
-                self._model, self._processor = load(str(source))
-            except Exception as exc:
-                raise BackendError(f"could not load {self.model_id}: {exc}") from exc
-            self._config = getattr(self._model, "config", None)
+    def _load(self) -> None:
+        if self._model is not None:
+            return
+        if not is_apple_silicon():
+            raise BackendUnavailable("the mlx backend needs a Mac with Apple Silicon")
+        if not _mlx_vlm_installed():
+            raise BackendUnavailable("mlx-vlm is not installed. Run `pip install mlx-vlm`.")
+        from mlx_vlm import load
+
+        # Load from the local snapshot when there is one. Passing the repo
+        # id makes huggingface_hub check for updates online on every start.
+        source = self.cached_path() or self.model_id
+        try:
+            self._model, self._processor = load(str(source))
+        except Exception as exc:
+            raise BackendError(f"could not load {self.model_id}: {exc}") from exc
+        self._config = getattr(self._model, "config", None)
 
     def recognize(self, image: Path, prompt: str, max_tokens: int) -> str:
-        self.load()
+        return self._worker.submit(self._recognize, image, prompt, max_tokens).result()
+
+    def _recognize(self, image: Path, prompt: str, max_tokens: int) -> str:
+        self._load()
         from mlx_vlm import generate
         from mlx_vlm.prompt_utils import apply_chat_template
 
-        with self._lock:
-            formatted = apply_chat_template(self._processor, self._config, prompt, num_images=1)
-            try:
-                out = generate(
-                    self._model,
-                    self._processor,
-                    formatted,
-                    [str(image)],
-                    max_tokens=max_tokens,
-                    temperature=0.0,
-                    verbose=False,
-                )
-            except Exception as exc:
-                raise BackendError(f"mlx-vlm generation failed: {exc}") from exc
+        formatted = apply_chat_template(self._processor, self._config, prompt, num_images=1)
+        try:
+            out = generate(
+                self._model,
+                self._processor,
+                formatted,
+                [str(image)],
+                max_tokens=max_tokens,
+                temperature=0.0,
+                verbose=False,
+            )
+        except Exception as exc:
+            raise BackendError(f"mlx-vlm generation failed: {exc}") from exc
         return out if isinstance(out, str) else str(getattr(out, "text", out))
