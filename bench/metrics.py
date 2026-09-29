@@ -43,6 +43,7 @@ DROP = (
     r"\qquad",
 )
 
+_SPACES = {"\\,", "\\;", "\\:", "\\!", "\\ "}
 _TOKEN = r"(\\[A-Za-z]+|\\.|[^\s{}\\])"
 
 
@@ -55,7 +56,8 @@ def normalize(latex: str) -> str:
     s = latex.strip()
     for cmd in DROP:
         s = _replace_command(s, cmd, "")
-    s = re.sub(r"\\[,;:! ]", "", s)
+    # Drop thin spaces token by token so the second backslash of \\ survives.
+    s = "".join(t for t in re.findall(r"\\[A-Za-z]+|\\.|.", s, re.DOTALL) if t not in _SPACES)
     for old, new in SYNONYMS.items():
         s = _replace_command(s, old, new)
     s = re.sub(r"\\operatorname\{(\w+)\}", r"\\\1", s)
@@ -68,6 +70,57 @@ def normalize(latex: str) -> str:
     # A trailing period or comma is punctuation, not math.
     s = re.sub(r"[.,]$", "", s)
     return s
+
+
+OPERATORS = (
+    "max",
+    "min",
+    "sin",
+    "cos",
+    "tan",
+    "log",
+    "ln",
+    "exp",
+    "det",
+    "lim",
+    "sup",
+    "inf",
+    "arg",
+    "dim",
+    "ker",
+    "gcd",
+    "deg",
+    "Pr",
+)
+_FENCES = (("(", ")", "pmatrix"), ("[", "]", "bmatrix"), ("|", "|", "vmatrix"))
+
+
+def equivalent(latex: str) -> str:
+    """Stricter normalisation plus rewrites between constructs that render alike.
+
+    Applied on top of :func:`normalize`. Each rule maps two spellings of the
+    same printed formula to one form:
+    - an ``array`` inside ``( )``, ``[ ]`` or ``| |`` becomes pmatrix,
+      bmatrix or vmatrix, and an ``array`` after ``\\{`` closed by ``.``
+      becomes ``cases``
+    - ``^{\\prime}`` becomes ``'``
+    - ``\\mathrm{max}`` and ``\\operatorname{max}`` become ``\\max``
+    """
+    s = normalize(latex)
+    for lo, rc, env in _FENCES:
+        pattern = re.escape(lo) + r"\\begin\{array\}\{[lcr|]+\}(.*?)\\end\{array\}" + re.escape(rc)
+        s = re.sub(pattern, lambda m, e=env: f"\\begin{{{e}}}{m.group(1)}\\end{{{e}}}", s)
+    s = re.sub(
+        r"\\\{\\begin\{array\}\{[lcr|]+\}(.*?)\\end\{array\}\.?(?!\\\})",
+        lambda m: f"\\begin{{cases}}{m.group(1)}\\end{{cases}}",
+        s,
+    )
+    s = re.sub(r"\^\{\\prime\\prime\}|\^\\prime\^\\prime", "''", s)
+    s = re.sub(r"\^\{\\prime\}|\^\\prime", "'", s)
+    ops = "|".join(OPERATORS)
+    s = re.sub(r"\\(?:mathrm|operatorname)\{(" + ops + r")\}", r"\\\1", s)
+    # Rewrites can leave single-token groups such as _{\max}. Normalise again.
+    return normalize(s)
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -85,11 +138,15 @@ def levenshtein(a: str, b: str) -> int:
 def score(pred: str, truth: str) -> dict:
     p, t = normalize(pred), normalize(truth)
     edits = levenshtein(p, t)
+    pe, te = equivalent(pred), equivalent(truth)
     return {
         "exact": p == t,
+        "equivalent": pe == te,
         "edits": edits,
         "length": len(t),
         "cer": edits / max(1, len(t)),
+        "edits_equiv": levenshtein(pe, te),
+        "length_equiv": len(te),
         "pred_norm": p,
         "truth_norm": t,
     }

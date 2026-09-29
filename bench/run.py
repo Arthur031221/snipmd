@@ -57,22 +57,28 @@ def machine() -> dict:
     }
 
 
-def render_all() -> list[dict]:
-    OUT.mkdir(parents=True, exist_ok=True)
+def render_all(scale: float = 2.0) -> list[dict]:
+    """Render every equation at ``scale`` pixels per point.
+
+    2.0 matches a Retina screen at 100 percent zoom (12 pt text is about
+    32 px tall). 1.0 matches a non-Retina screen or a zoomed out page.
+    """
+    out = OUT / f"x{scale:g}"
+    out.mkdir(parents=True, exist_ok=True)
     tool = engine()
     items = []
     for i, (cat, latex) in enumerate(EQUATIONS, 1):
-        png = OUT / f"eq{i:02d}.png"
+        png = out / f"eq{i:02d}.png"
         if tool == "mathtext" and not mathtext_supported(latex):
             continue
         if not png.exists():
             try:
-                render_equation(latex, png, OUT / "tex")
+                render_equation(latex, png, OUT / "tex", scale)
             except RenderError as exc:
                 print(f"skip eq{i:02d}: {exc}", file=sys.stderr)
                 continue
         items.append({"id": i, "category": cat, "truth": latex, "image": str(png)})
-    print(f"rendered {len(items)} equations with {tool}", file=sys.stderr)
+    print(f"rendered {len(items)} equations with {tool} at {scale:g}x", file=sys.stderr)
     return items
 
 
@@ -86,7 +92,7 @@ def backend_label(eng: Engine, cfg: Config) -> str:
 
 
 def cmd_accuracy(args: argparse.Namespace) -> None:
-    items = render_all()
+    items = render_all(args.scale)
     cfg = Config(backend=args.backend)
     eng = Engine(cfg)
     t0 = time.perf_counter()
@@ -96,40 +102,69 @@ def cmd_accuracy(args: argparse.Namespace) -> None:
     for item in items:
         result = eng.run(Path(item["image"]), "latex")
         s = score(result.text, item["truth"])
-        rows.append({**item, "pred": result.text, "seconds": round(result.seconds, 3), **s})
+        rows.append({**item, "pred": result.text, "seconds": round(result.seconds, 3)})
         mark = "ok " if s["exact"] else "   "
         print(f"{mark} eq{item['id']:02d} cer={s['cer']:.3f}  {result.text}", file=sys.stderr)
 
-    n = len(rows)
-    exact = sum(r["exact"] for r in rows)
-    cer = sum(r["edits"] for r in rows) / max(1, sum(r["length"] for r in rows))
-    by_cat: dict[str, dict] = {}
-    for r in rows:
-        c = by_cat.setdefault(r["category"], {"n": 0, "exact": 0})
-        c["n"] += 1
-        c["exact"] += int(r["exact"])
     summary = {
         "benchmark": "latex-roundtrip",
         "date": date.today().isoformat(),
         "backend": backend_label(eng, cfg),
         "renderer": engine(),
-        "n": n,
-        "exact_match": exact,
-        "exact_match_rate": round(exact / max(1, n), 4),
-        "cer": round(cer, 4),
-        "median_seconds": round(statistics.median(r["seconds"] for r in rows), 3),
+        "scale": args.scale,
         "model_load_seconds": round(load_s, 2),
-        "by_category": by_cat,
         "machine": machine(),
         "rows": rows,
     }
-    RESULTS.mkdir(parents=True, exist_ok=True)
-    name = args.name or f"accuracy-{eng.backend.name}"
-    (RESULTS / f"{name}.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
-    print(
-        f"\n{summary['backend']}: exact {exact}/{n} ({summary['exact_match_rate']:.1%}), "
-        f"CER {cer:.2%}, median {summary['median_seconds']} s per equation",
+    name = args.name or f"accuracy-{eng.backend.name}-x{args.scale:g}"
+    write_accuracy(summary, RESULTS / f"{name}.json")
+
+
+def write_accuracy(summary: dict, path: Path) -> None:
+    """Aggregate per-row scores into the summary and save it."""
+    rows = summary["rows"]
+    for r in rows:
+        r.update(score(r["pred"], r["truth"]))
+    n = len(rows)
+    exact = sum(r["exact"] for r in rows)
+    equiv = sum(r["equivalent"] for r in rows)
+    cer = sum(r["edits"] for r in rows) / max(1, sum(r["length"] for r in rows))
+    cer_eq = sum(r["edits_equiv"] for r in rows) / max(1, sum(r["length_equiv"] for r in rows))
+    by_cat: dict[str, dict] = {}
+    for r in rows:
+        c = by_cat.setdefault(r["category"], {"n": 0, "exact": 0, "equivalent": 0})
+        c["n"] += 1
+        c["exact"] += int(r["exact"])
+        c["equivalent"] += int(r["equivalent"])
+    summary.update(
+        {
+            "n": n,
+            "exact_match": exact,
+            "exact_match_rate": round(exact / max(1, n), 4),
+            "equivalent_match": equiv,
+            "equivalent_match_rate": round(equiv / max(1, n), 4),
+            "cer": round(cer, 4),
+            "cer_equivalent": round(cer_eq, 4),
+            "median_seconds": round(statistics.median(r["seconds"] for r in rows), 3),
+            "by_category": by_cat,
+        }
     )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
+    for r in rows:
+        if not r["equivalent"]:
+            print(f"miss eq{r['id']:02d}: {r['pred']}  (truth {r['truth']})", file=sys.stderr)
+    print(
+        f"{summary['backend']}: exact {exact}/{n} ({exact / max(1, n):.1%}), "
+        f"equivalent {equiv}/{n} ({equiv / max(1, n):.1%}), CER {cer:.2%} "
+        f"(equivalent {cer_eq:.2%}), median {summary['median_seconds']} s per equation"
+    )
+
+
+def cmd_rescore(args: argparse.Namespace) -> None:
+    """Recompute scores from saved predictions, no model needed."""
+    for path in sorted(RESULTS.glob("accuracy-*.json")):
+        write_accuracy(json.loads(path.read_text()), path)
 
 
 def cmd_latency(args: argparse.Namespace) -> None:
@@ -202,9 +237,12 @@ def cmd_latency(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("render", help="render the equations to bench/out and stop")
+    p = sub.add_parser("render", help="render the equations to bench/out and stop")
+    p.add_argument("--scale", type=float, default=2.0, help="pixels per point (default 2)")
+    sub.add_parser("rescore", help="recompute scores in bench/results without a model")
     p = sub.add_parser("accuracy", help="OCR every rendered equation in latex mode")
     p.add_argument("--backend", default="mlx", choices=("mlx", "ollama", "auto"))
+    p.add_argument("--scale", type=float, default=2.0, help="pixels per point (default 2)")
     p.add_argument("--name", help="results file name")
     p = sub.add_parser("latency", help="time n snips from PNG on disk to clipboard")
     p.add_argument("--backend", default="mlx", choices=("mlx", "ollama", "auto"))
@@ -213,9 +251,11 @@ def main() -> None:
     p.add_argument("--name", help="results file name")
     args = parser.parse_args()
     if args.cmd == "render":
-        render_all()
+        render_all(args.scale)
     elif args.cmd == "accuracy":
         cmd_accuracy(args)
+    elif args.cmd == "rescore":
+        cmd_rescore(args)
     else:
         cmd_latency(args)
 

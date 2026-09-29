@@ -65,6 +65,10 @@ def render_tex(body: str, png: Path, workdir: Path, scale: float = 2.0) -> Path:
     key = hashlib.sha1(body.encode()).hexdigest()[:12]
     tex = workdir / f"{key}.tex"
     tex.write_text(PREAMBLE + body + "\n\\end{document}\n", encoding="utf-8")
+    pdf = workdir / f"{key}.pdf"
+    if pdf.exists():
+        _pdf_to_png(pdf, png, scale)
+        return png
     tool = engine()
     if tool == "tectonic":
         cmd = ["tectonic", "--chatter", "minimal", "--outdir", str(workdir), str(tex)]
@@ -72,8 +76,7 @@ def render_tex(body: str, png: Path, workdir: Path, scale: float = 2.0) -> Path:
         cmd = ["pdflatex", "-interaction=nonstopmode", "-output-directory", str(workdir), str(tex)]
     else:
         raise RenderError("no TeX engine found")
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-    pdf = workdir / f"{key}.pdf"
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if proc.returncode != 0 or not pdf.exists():
         raise RenderError((proc.stderr or proc.stdout).strip()[-400:])
     _pdf_to_png(pdf, png, scale)

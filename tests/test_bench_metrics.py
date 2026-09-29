@@ -39,3 +39,24 @@ def test_score():
     assert s["exact"] and s["cer"] == 0
     s = score(r"\frac{a}{c}", r"\frac{a}{b}")
     assert not s["exact"] and s["edits"] == 1
+
+
+def test_row_separator_survives_spacing_removal():
+    assert normalize(r"a & b \\ c & d") == r"a&b\\c&d"
+    assert normalize(r"x\,y\;z\!w") == "xyzw"
+
+
+def test_equivalent_forms():
+    from metrics import equivalent
+
+    assert equivalent(r"\left(\begin{array}{cc} a & b \\ c & d \end{array}\right)") == equivalent(
+        r"\begin{pmatrix}a&b\\c&d\end{pmatrix}"
+    )
+    assert equivalent(r"\left\{\begin{array}{ll} x & x>0 \\ 0 & x \le 0 \end{array}\right.") == (
+        equivalent(r"\begin{cases}x&x>0\\0&x\leq0\end{cases}")
+    )
+    assert equivalent(r"f^{\prime}(x)") == equivalent("f'(x)")
+    assert equivalent(r"\lambda_{\mathrm{max}}") == equivalent(r"\lambda_{\max}")
+    assert equivalent(r"\begin{pmatrix}a\end{pmatrix}") != equivalent(
+        r"\begin{bmatrix}a\end{bmatrix}"
+    )

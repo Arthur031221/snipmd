@@ -38,6 +38,35 @@ def strip_code_fences(text: str) -> str:
     return _INNER_FENCE_RE.sub(unwrap, text).strip()
 
 
+def trim_repetition(text: str, max_unit: int = 400) -> str | None:
+    """Detect a generation loop at the end of ``text``.
+
+    Returns the text with the loop collapsed to one copy, or None when the
+    tail does not repeat. A unit must repeat 3 times (5 times when shorter
+    than 16 characters) so that honest repetition, such as two identical
+    table rows, is left alone.
+    """
+    n = len(text)
+    for p in range(1, min(max_unit, n // 3) + 1):
+        reps = 3 if p >= 16 else 5
+        if p * reps > n:
+            continue
+        unit = text[n - p :]
+        if unit.strip() and text.endswith(unit * reps):
+            return text[: n - p * (reps - 1)]
+    return None
+
+
+def drop_empty_fences(text: str) -> str:
+    """Remove fences with nothing inside and a fence left open at the end."""
+    text = re.sub(r"```[\w+-]*[ \t]*\n\s*```[ \t]*\n?", "", text)
+    if text.count("```") % 2 == 1:
+        head, _, tail = text.rpartition("```")
+        if not tail.strip() or tail.strip().isalnum():
+            text = head
+    return text
+
+
 def normalize_delimiters(text: str) -> str:
     """Use ``$...$`` for inline math and ``$$...$$`` for display math."""
     text = re.sub(r"\\\[\s*(.*?)\s*\\\]", lambda m: f"$${m.group(1)}$$", text, flags=re.DOTALL)
@@ -165,7 +194,7 @@ def _strip_one(eq: str) -> str:
 
 def to_latex(text: str) -> str:
     """Return a bare equation with no math delimiters, on one line."""
-    text = strip_code_fences(text)
+    text = strip_code_fences(drop_empty_fences(text))
     text = normalize_delimiters(text)
     blocks = [b.strip() for b in re.findall(r"\$\$(.*?)\$\$", text, flags=re.DOTALL)]
     leftover = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL).strip()
@@ -266,7 +295,7 @@ def rows_to_csv(rows: list[list[str]]) -> str:
 
 
 def table_rows(text: str) -> list[list[str]]:
-    text = strip_code_fences(text)
+    text = strip_code_fences(drop_empty_fences(text))
     if "<table" in text.lower() or "<tr" in text.lower():
         return html_table_rows(text)
     return markdown_table_rows(text)
@@ -282,7 +311,7 @@ def to_table(text: str, fmt: str = "markdown") -> str:
 
 
 def to_markdown(text: str) -> str:
-    text = strip_code_fences(text)
+    text = strip_code_fences(drop_empty_fences(text))
     if "<table" in text.lower():
         text = re.sub(
             r"<table.*?</table>",

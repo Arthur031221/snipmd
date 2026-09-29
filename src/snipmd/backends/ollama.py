@@ -9,6 +9,7 @@ import urllib.request
 from pathlib import Path
 
 from snipmd.backends import BackendError, BackendUnavailable
+from snipmd.postprocess import trim_repetition
 
 
 class OllamaBackend:
@@ -64,21 +65,48 @@ class OllamaBackend:
             raise BackendError(f"ollama pull {self.model} failed: {exc}") from exc
 
     def recognize(self, image: Path, prompt: str, max_tokens: int) -> str:
+        """Stream the answer and stop early when the model starts looping.
+
+        The glm-ocr build in the Ollama library does not always stop at its
+        end token and repeats the answer until num_predict runs out. Reading
+        the stream lets us cut the loop after a few repeats instead of
+        waiting for 2048 tokens.
+        """
         payload = {
             "model": self.model,
             "prompt": prompt,
             "images": [base64.b64encode(image.read_bytes()).decode("ascii")],
-            "stream": False,
+            "stream": True,
             "keep_alive": "10m",
             "options": {"temperature": 0, "num_predict": max_tokens},
         }
+        req = urllib.request.Request(
+            self.url + "/api/generate",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        text = ""
         try:
-            out = self._request("/api/generate", payload)
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                for line in resp:
+                    if not line.strip():
+                        continue
+                    chunk = json.loads(line)
+                    if "error" in chunk:
+                        raise BackendError(f"Ollama error: {chunk['error']}")
+                    text += chunk.get("response", "")
+                    if chunk.get("done"):
+                        break
+                    cut = trim_repetition(text)
+                    if cut is not None:
+                        text = cut
+                        break
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", "replace")[:300]
             raise BackendError(f"Ollama returned HTTP {exc.code}: {body}") from exc
         except (urllib.error.URLError, OSError) as exc:
             raise BackendUnavailable(f"Ollama is not reachable at {self.url}: {exc}") from exc
-        if "error" in out:
-            raise BackendError(f"Ollama error: {out['error']}")
-        return str(out.get("response", ""))
+        except json.JSONDecodeError as exc:
+            raise BackendError(f"Ollama sent a malformed stream: {exc}") from exc
+        return text

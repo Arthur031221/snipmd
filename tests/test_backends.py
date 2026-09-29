@@ -16,7 +16,7 @@ from snipmd.config import Config
 class _FakeOllama(BaseHTTPRequestHandler):
     models: ClassVar[list[str]] = ["glm-ocr:q8_0"]
     requests: ClassVar[list[dict]] = []
-    reply: ClassVar[dict] = {"response": "$$x$$"}
+    reply: ClassVar[dict | list] = {"response": "$$x$$", "done": True}
 
     def log_message(self, *args):
         pass
@@ -39,7 +39,15 @@ class _FakeOllama(BaseHTTPRequestHandler):
         length = int(self.headers["Content-Length"])
         payload = json.loads(self.rfile.read(length))
         type(self).requests.append(payload)
-        if self.path == "/api/generate":
+        if self.path == "/api/generate" and payload.get("stream"):
+            chunks = self.reply if isinstance(self.reply, list) else [self.reply]
+            body = "".join(json.dumps(c) + "\n" for c in chunks).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif self.path == "/api/generate":
             self._json(200, self.reply)
         elif self.path == "/api/pull":
             self._json(200, {"status": "success"})
@@ -51,7 +59,7 @@ class _FakeOllama(BaseHTTPRequestHandler):
 def ollama_server():
     _FakeOllama.requests = []
     _FakeOllama.models = ["glm-ocr:q8_0"]
-    _FakeOllama.reply = {"response": "$$x$$"}
+    _FakeOllama.reply = {"response": "$$x$$", "done": True}
     server = HTTPServer(("127.0.0.1", 0), _FakeOllama)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -68,7 +76,7 @@ def test_ollama_recognize_sends_image_and_prompt(ollama_server, image_file):
     req = _FakeOllama.requests[-1]
     assert req["model"] == "glm-ocr:q8_0"
     assert req["prompt"] == "Formula Recognition:"
-    assert req["stream"] is False
+    assert req["stream"] is True
     assert req["options"] == {"temperature": 0, "num_predict": 123}
     assert base64.b64decode(req["images"][0]) == image_file.read_bytes()
 
@@ -83,6 +91,24 @@ def test_ollama_model_missing(ollama_server):
 def test_ollama_latest_tag_matches(ollama_server):
     _FakeOllama.models = ["glm-ocr:latest"]
     assert OllamaBackend("glm-ocr", ollama_server).status()[0]
+
+
+def test_ollama_streams_and_cuts_loops(ollama_server, image_file):
+    loop = [{"response": "$$\n\\frac {a}{b}\n$$\n", "done": False}] * 50
+    _FakeOllama.reply = [*loop, {"response": "", "done": True}]
+    out = OllamaBackend("glm-ocr:q8_0", ollama_server).recognize(image_file, "x", 10)
+    assert out == "$$\n\\frac {a}{b}\n$$\n"
+
+
+def test_ollama_joins_stream_chunks(ollama_server, image_file):
+    _FakeOllama.reply = [
+        {"response": "Hello ", "done": False},
+        {"response": "world", "done": False},
+        {"response": "", "done": True},
+    ]
+    assert OllamaBackend("glm-ocr:q8_0", ollama_server).recognize(image_file, "x", 10) == (
+        "Hello world"
+    )
 
 
 def test_ollama_error_payload(ollama_server, image_file):

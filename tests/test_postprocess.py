@@ -130,3 +130,21 @@ def test_markdown_tidies_math_spans():
 
 def test_latex_mode_tidies():
     assert pp.to_latex("$$\n\\frac {a + b}{c - d}\n$$") == r"\frac{a+b}{c-d}"
+
+
+def test_trim_repetition():
+    block = "$$\n\\frac{a}{b}\n$$\n"
+    assert pp.trim_repetition(block * 3) == block
+    assert pp.trim_repetition("x = 1\n" + "```\n" * 5) == "x = 1\n```\n"
+    assert pp.trim_repetition("abc") is None
+
+
+def test_trim_repetition_leaves_honest_repeats():
+    rows = "| 0 | 0 |\n| 0 | 0 |\n"
+    assert pp.trim_repetition("| a | b |\n" + rows) is None
+    assert pp.trim_repetition("1 & 0 \\\\ 0 & 1") is None
+
+
+def test_drop_empty_fences():
+    assert pp.drop_empty_fences("$x$\n```markdown\n\n```\nmore") == "$x$\nmore"
+    assert pp.drop_empty_fences("text\n```") == "text\n"
