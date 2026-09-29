@@ -18,17 +18,25 @@ Copying an equation out of a PDF or a lecture slide means retyping it by hand. M
 
 ## Install
 
+Not on PyPI yet. Install straight from GitHub:
+
 ```sh
-uvx snipmd
+uv tool install git+https://github.com/Arthur031221/snipmd
 ```
 
-Or `pipx install snipmd`. On Apple Silicon this installs mlx-vlm and runs the model in process. On other machines snipmd uses [Ollama](https://ollama.com).
+or run it once without installing:
+
+```sh
+uvx --from git+https://github.com/Arthur031221/snipmd snipmd
+```
+
+Once published, `uvx snipmd` or `pipx install snipmd` will work the same way. On Apple Silicon this installs mlx-vlm and runs the model in process. On other machines snipmd uses [Ollama](https://ollama.com).
 
 ## Quick start
 
 ```sh
-uvx snipmd pull     # download GLM-OCR for MLX once (1.6 GB)
-uvx snipmd          # start the menu bar app
+snipmd pull     # download GLM-OCR for MLX once (1.6 GB)
+snipmd          # start the menu bar app
 ```
 
 Press `cmd+shift+2`, drag a box around an equation, and paste. The first time, macOS asks for two permissions for your terminal: Screen Recording for the capture and Accessibility (or Input Monitoring) for the hotkey. The Snip item in the menu works without the hotkey permission.
