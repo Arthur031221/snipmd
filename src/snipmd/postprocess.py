@@ -205,6 +205,12 @@ def to_latex(text: str) -> str:
     # A model that loops repeats the same block. Keep one copy.
     blocks = [b for i, b in enumerate(blocks) if i == 0 or b != blocks[i - 1]]
     leftover = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL).strip()
+    if blocks and leftover.startswith("$$") and "$$" not in leftover[2:]:
+        # An unclosed block after complete ones is output cut off mid-loop.
+        leftover = ""
+    if blocks and leftover in blocks:
+        # The same equation once bare and once in $$ is a repeat, not two parts.
+        leftover = ""
     if blocks and not leftover:
         eqs = [_strip_one(b) for b in blocks if b.strip()]
     else:

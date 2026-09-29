@@ -169,9 +169,11 @@ Responses are JSON: `{"text", "raw", "mode", "backend", "seconds", "id"}`. An ed
 | --- | --- | --- | --- | --- | --- |
 | MLX, GLM-OCR 8-bit | 2x (Retina, 12 pt) | 38/48 | 48/48 | 8.9% | 0.91 s |
 | MLX, GLM-OCR 8-bit | 1x (non-Retina, 12 pt) | 38/48 | 48/48 | 8.9% | 1.34 s |
-| Ollama, glm-ocr:q8_0 | 2x | 36/48 | 44/48 | 23.6% | 2.43 s |
+| Ollama, glm-ocr:q8_0 | 2x | 37/48 | 47/48 | 13.1% | 2.43 s |
 
-All 10 exact-match misses on MLX are notation choices: six matrices written as `\left(\begin{array}...` instead of `pmatrix`, one `cases`, two `f^{\prime}`, one `\mathrm{max}`. The Ollama build of glm-ocr (Ollama 0.34.4) does not stop at its end token and repeats its answer. snipmd cuts the loop from the stream, but a few answers keep a second, partial copy, which is where its lower score comes from. Use MLX on a Mac.
+All 10 exact-match misses on MLX are notation choices: six matrices written as `\left(\begin{array}...` instead of `pmatrix`, one `cases`, two `f^{\prime}`, one `\mathrm{max}`. Every MLX output also parses without errors in KaTeX 0.18.9 (`node bench/katex_check.cjs`).
+
+The Ollama build of glm-ocr (Ollama 0.34.4) does not stop at its end token and repeats its answer until the token limit. snipmd reads the stream and cuts the loop, which keeps it usable, but one answer still came back as two different copies and each snip is slower. Use MLX on a Mac.
 
 End to end, 20 snips from PNG on disk to text on the clipboard (prepare, recognise, post-process, `pbcopy`, history write) took a median of 1.40 s, p90 2.07 s, with the model already loaded. Loading the model took between 3 and 15 s across the runs, depending on what else was using the machine.[^bench]
 

@@ -158,3 +158,11 @@ def test_trim_repetition_keeps_first_copy_when_cut_mid_block():
 
 def test_to_latex_dedupes_repeated_blocks():
     assert pp.to_latex("$$x$$\n$$x$$\n$$y$$") == "\\begin{gathered} x \\\\ y \\end{gathered}"
+
+
+def test_to_latex_drops_unclosed_tail_block():
+    assert pp.to_latex("$$\nx=1\n$$\n$$\nx=") == "x=1"
+
+
+def test_to_latex_drops_bare_repeat_of_block():
+    assert pp.to_latex("x=1\n$$\nx=1\n$$") == "x=1"

@@ -31,7 +31,7 @@ from equations import EQUATIONS  # noqa: E402
 from metrics import score  # noqa: E402
 from render import RenderError, engine, mathtext_supported, render_equation  # noqa: E402
 
-from snipmd import history, system  # noqa: E402
+from snipmd import history, postprocess, system  # noqa: E402
 from snipmd.config import Config  # noqa: E402
 from snipmd.engine import Engine  # noqa: E402
 
@@ -126,6 +126,10 @@ def write_accuracy(summary: dict, path: Path) -> None:
     """Aggregate per-row scores into the summary and save it."""
     rows = summary["rows"]
     for r in rows:
+        if r.get("raw") is not None:
+            # Re-run post-processing on the stored model output so that a
+            # rescore reflects the current snipmd code.
+            r["pred"] = postprocess.clean(r["raw"], "latex")
         r.update(score(r["pred"], r["truth"]))
     n = len(rows)
     exact = sum(r["exact"] for r in rows)

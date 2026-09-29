@@ -305,17 +305,17 @@
       "category": "matrix",
       "truth": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}",
       "image": "/Users/arthur/Desktop/oss-localmac/snipmd/bench/out/x2/eq17.png",
-      "pred": "$$\\left(\\begin{array}{c c} a & b \\\\ c & d \\end{array} \\right)$$$$\\begin{array}{c c} a & b \\\\ c & d \\end{array}",
+      "pred": "\\left(\\begin{array}{c c} a & b \\\\ c & d \\end{array} \\right)",
       "raw": "$$\n\\left( \\begin{array}{c c} a & b \\\\ c & d \\end{array} \\right)\n$$\n$$\n\\begin{array}{c c} a & b \\\\ c & d \\end{array}",
       "seconds": 2.309,
       "exact": false,
-      "equivalent": false,
-      "edits": 55,
+      "equivalent": true,
+      "edits": 15,
       "length": 36,
-      "cer": 1.5277777777777777,
-      "edits_equiv": 42,
+      "cer": 0.4166666666666667,
+      "edits_equiv": 0,
       "length_equiv": 36,
-      "pred_norm": "$$(\\begin{array}{cc}a&b\\\\c&d\\end{array})$$$$\\begin{array}{cc}a&b\\\\c&d\\end{array}",
+      "pred_norm": "(\\begin{array}{cc}a&b\\\\c&d\\end{array})",
       "truth_norm": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}"
     },
     {
@@ -395,17 +395,17 @@
       "category": "matrix",
       "truth": "\\begin{bmatrix}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{bmatrix}",
       "image": "/Users/arthur/Desktop/oss-localmac/snipmd/bench/out/x2/eq22.png",
-      "pred": "$$\\left[\\begin{array}{c c} \\cos \\theta & -\\sin \\theta \\\\ \\sin \\theta & \\cos \\theta \\end{array} \\right]$$$$\\begin{array}{c c} \\cos \\theta & -\\sin \\theta \\\\ \\sin \\theta & \\cos \\theta \\end{array}",
+      "pred": "\\left[\\begin{array}{c c} \\cos \\theta & -\\sin \\theta \\\\ \\sin \\theta & \\cos \\theta \\end{array} \\right]",
       "raw": "$$\n\\left[ \\begin{array}{c c} \\cos \\theta & - \\sin \\theta \\\\ \\sin \\theta & \\cos \\theta \\end{array} \\right]\n$$\n$$\n\\begin{array}{c c} \\cos \\theta & - \\sin \\theta \\\\ \\sin \\theta & \\cos \\theta \\end{array}",
       "seconds": 3.664,
       "exact": false,
-      "equivalent": false,
-      "edits": 90,
+      "equivalent": true,
+      "edits": 15,
       "length": 73,
-      "cer": 1.2328767123287672,
-      "edits_equiv": 79,
+      "cer": 0.2054794520547945,
+      "edits_equiv": 0,
       "length_equiv": 73,
-      "pred_norm": "$$[\\begin{array}{cc}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{array}]$$$$\\begin{array}{cc}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{array}",
+      "pred_norm": "[\\begin{array}{cc}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{array}]",
       "truth_norm": "\\begin{bmatrix}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{bmatrix}"
     },
     {
@@ -719,17 +719,17 @@
       "category": "mixed",
       "truth": "x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}",
       "image": "/Users/arthur/Desktop/oss-localmac/snipmd/bench/out/x2/eq40.png",
-      "pred": "x=\\frac{-b\\pm \\sqrt{b^{2}-4 a c}}{2 a}$$x=\\frac{-b\\pm \\sqrt{b^{2}-4 a c}}{2 a}$$",
+      "pred": "x=\\frac{-b\\pm \\sqrt{b^{2}-4 a c}}{2 a}",
       "raw": "x=\\frac{-b\\pm \\sqrt{b^{2}-4 a c}}{2 a}\n$$\nx=\\frac{-b\\pm \\sqrt{b^{2}-4 a c}}{2 a}\n$$",
       "seconds": 3.903,
-      "exact": false,
-      "equivalent": false,
-      "edits": 36,
+      "exact": true,
+      "equivalent": true,
+      "edits": 0,
       "length": 32,
-      "cer": 1.125,
-      "edits_equiv": 36,
+      "cer": 0.0,
+      "edits_equiv": 0,
       "length_equiv": 32,
-      "pred_norm": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$",
+      "pred_norm": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}",
       "truth_norm": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"
     },
     {
@@ -878,12 +878,12 @@
     }
   ],
   "n": 48,
-  "exact_match": 36,
-  "exact_match_rate": 0.75,
-  "equivalent_match": 44,
-  "equivalent_match_rate": 0.9167,
-  "cer": 0.2355,
-  "cer_equivalent": 0.1506,
+  "exact_match": 37,
+  "exact_match_rate": 0.7708,
+  "equivalent_match": 47,
+  "equivalent_match_rate": 0.9792,
+  "cer": 0.1312,
+  "cer_equivalent": 0.0421,
   "median_seconds": 2.431,
   "by_category": {
     "fraction": {
@@ -899,7 +899,7 @@
     "matrix": {
       "n": 6,
       "exact": 0,
-      "equivalent": 4
+      "equivalent": 6
     },
     "sum": {
       "n": 8,
@@ -913,8 +913,8 @@
     },
     "mixed": {
       "n": 10,
-      "exact": 8,
-      "equivalent": 9
+      "exact": 9,
+      "equivalent": 10
     }
   }
 }
