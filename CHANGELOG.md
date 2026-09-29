@@ -12,7 +12,8 @@ First release.
 - Four output modes: `markdown`, `latex` (bare equation, no delimiters), `table` (Markdown or CSV) and `text`.
 - GLM-OCR through mlx-vlm on Apple Silicon and through Ollama anywhere else, selected with `--backend mlx|ollama|auto`.
 - Apple Vision fast path for plain text mode.
-- Post-processing: code fence stripping, LaTeX delimiter normalisation, HTML table conversion, whitespace cleanup.
+- Post-processing: code fence stripping, LaTeX delimiter normalisation, removal of the model's token spacing, HTML table conversion, whitespace cleanup.
+- Ollama responses are streamed and generation loops are cut, because the glm-ocr build in Ollama 0.34.4 does not stop at its end token.
 - Commands: `snipmd`, `snipmd snip`, `snipmd FILE`, `snipmd serve`, `snipmd history`, `snipmd config`, `snipmd doctor`, `snipmd pull`. JSON output with `--json`.
 - Local HTTP API on 127.0.0.1 with `/ocr`, `/snip`, `/history` and `/health`. Cross-origin browser requests are refused.
 - Offline KaTeX preview page. KaTeX is bundled, nothing is fetched from a CDN.
