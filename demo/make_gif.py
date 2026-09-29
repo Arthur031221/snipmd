@@ -292,7 +292,6 @@ def main() -> None:
             ],
             check=True,
         )
-        frames[-1].save(HERE / "snip-final.png")
         print(
             f"{out} ({len(frames)} frames, {len(frames) / FPS:.1f} s, "
             f"{out.stat().st_size // 1024} KB)"
