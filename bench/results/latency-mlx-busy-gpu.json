@@ -1,0 +1,41 @@
+{
+  "benchmark": "snip-latency",
+  "date": "2026-09-30",
+  "backend": "mlx (mlx-community/GLM-OCR-8bit)",
+  "mode": "latex",
+  "n": 20,
+  "median_seconds": 1.401,
+  "p90_seconds": 2.072,
+  "min_seconds": 0.632,
+  "max_seconds": 2.598,
+  "model_load_seconds": 5.55,
+  "first_snip_seconds": 0.75,
+  "machine": {
+    "chip": "Apple M5",
+    "memory_gb": 24,
+    "os": "macOS 26.6",
+    "python": "3.12.14"
+  },
+  "times": [
+    0.647,
+    0.632,
+    0.972,
+    2.598,
+    1.406,
+    1.026,
+    1.212,
+    1.32,
+    1.615,
+    1.396,
+    1.303,
+    1.241,
+    1.718,
+    1.078,
+    1.643,
+    1.693,
+    2.545,
+    1.555,
+    2.072,
+    1.477
+  ]
+}

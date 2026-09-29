@@ -2,7 +2,7 @@
 
 Press a hotkey, drag a box, get Markdown, LaTeX or a table on your clipboard. Free, offline, runs the 0.9B GLM-OCR model on your Mac.
 
-On 48 printed equations (fractions, integrals, matrices, sums, Greek, cases), snipmd returned LaTeX that matches the source for all 48, with a median of 1.4 s from mouse release to clipboard on a MacBook Air M5.[^bench]
+On 48 printed equations (fractions, integrals, matrices, sums, Greek, cases), snipmd returned LaTeX that matches the source for all 48, with a median of 0.5 s from mouse release to clipboard on a MacBook Air M5.[^bench]
 
 [![CI](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -175,7 +175,7 @@ All 10 exact-match misses on MLX are notation choices: six matrices written as `
 
 The Ollama build of glm-ocr (Ollama 0.34.4) does not stop at its end token and repeats its answer until the token limit. snipmd reads the stream and cuts the loop, which keeps it usable, but one answer still came back as two different copies and each snip is slower. Use MLX on a Mac.
 
-End to end, 20 snips from PNG on disk to text on the clipboard (prepare, recognise, post-process, `pbcopy`, history write) took a median of 1.40 s, p90 2.07 s, with the model already loaded. Loading the model took between 3 and 15 s across the runs, depending on what else was using the machine.[^bench]
+End to end, 20 snips from PNG on disk to text on the clipboard (prepare, recognise, post-process, `pbcopy`, history write) took a median of 0.50 s, p90 0.62 s, with the model already loaded. An earlier run of the same 20 snips while another MLX job was busy on the GPU gave a median of 1.40 s, p90 2.07 s (`bench/results/latency-mlx-busy-gpu.json`). The first snip after loading is slower because kernels compile on first use. Loading the model took between 3 and 15 s across the runs, depending on what else was using the machine.[^bench]
 
 ```sh
 uv run --group bench python bench/run.py accuracy --backend mlx
@@ -206,6 +206,6 @@ Bug reports with the image you snipped are the most useful thing you can send. S
 
 MIT. See [LICENSE](LICENSE). GLM-OCR is MIT licensed by Z.ai. KaTeX, bundled for the preview page, is MIT licensed by Khan Academy.
 
-[^bench]: Method: 48 equations from `bench/equations.py` rendered with tectonic 0.17 at 12 pt, rasterised at 2 pixels per point, recognised in latex mode by `mlx-community/GLM-OCR-8bit` through mlx-vlm 0.7.4 on a MacBook Air M5 with 24 GB, macOS 26.6, 2026-09-30. "Matches" means equal after the normalisation and equivalence rules in `bench/metrics.py`. 38 of 48 were equal without the equivalence rules. Latency: 20 runs of the hotkey code path minus the drag, from a PNG on disk to `pbcopy` done, model already loaded. Other model workloads were sharing the GPU during the runs, so an idle machine should be at least this fast. Raw results are in `bench/results/`.
+[^bench]: Method: 48 equations from `bench/equations.py` rendered with tectonic 0.17 at 12 pt, rasterised at 2 pixels per point, recognised in latex mode by `mlx-community/GLM-OCR-8bit` through mlx-vlm 0.7.4 on a MacBook Air M5 with 24 GB, macOS 26.6, 2026-09-30. "Matches" means equal after the normalisation and equivalence rules in `bench/metrics.py`. 38 of 48 were equal without the equivalence rules. Latency: 20 runs of the hotkey code path minus the drag, from a PNG on disk to `pbcopy` done, model already loaded, same machine and date. Other builds were running on the machine throughout, so the accuracy timings in particular are not from an idle system. Raw results are in `bench/results/`.
 
 [^price]: Mathpix Snip pricing page, https://mathpix.com/pricing/snip, read 2026-09-30: Free plan 10 images and 10 PDF pages a month, Pro $4.99 a month or $49.90 billed yearly.
