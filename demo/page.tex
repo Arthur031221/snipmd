@@ -1,0 +1,24 @@
+\documentclass[11pt]{article}
+\usepackage[paperwidth=5.6in,paperheight=3.6in,margin=0.35in]{geometry}
+\usepackage{amsmath,amssymb}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\begin{document}
+\textbf{2.3\quad The Gaussian integral}
+
+Let $I = \int_{-\infty}^{\infty} e^{-x^2}\,dx$. Squaring $I$ and switching to
+polar coordinates $x = r\cos\theta$, $y = r\sin\theta$ gives
+\[
+I^2 = \int_{0}^{2\pi}\!\int_{0}^{\infty} e^{-r^2}\, r\,dr\,d\theta = \pi ,
+\]
+so $I = \sqrt{\pi}$. Completing the square in the exponent extends this to
+any $a > 0$ and $b \in \mathbb{R}$:
+\begin{equation}
+\int_{-\infty}^{\infty} e^{-a x^{2}+b x}\,dx=\sqrt{\frac{\pi}{a}}\;e^{\frac{b^{2}}{4 a}}
+\tag{2.7}
+\end{equation}
+Setting $a = \tfrac{1}{2\sigma^2}$ recovers the normalising constant of the
+normal density, and differentiating (2.7) with respect to $b$ at $b = 0$
+yields every moment $\mathbb{E}[X^{n}]$.
+\end{document}
