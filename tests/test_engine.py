@@ -48,7 +48,7 @@ def test_prepare_rejects_tiny(tmp_path):
 @pytest.mark.parametrize(
     "mode,expected",
     [
-        ("markdown", "# Title\n\nEnergy is $E = mc^2$."),
+        ("markdown", "# Title\n\nEnergy is $E=mc^2$."),
         ("latex", "\\frac{a}{b}"),
         ("table", "| x | y |\n| --- | --- |\n| 1 | 2 |"),
     ],
@@ -81,7 +81,7 @@ def test_text_mode_model_engine(fake_backend, image_file, monkeypatch):
     monkeypatch.setattr(vision, "available", lambda: True)
     result = Engine(Config(text_engine="model")).run(image_file, "text")
     assert result.backend == "fake"
-    assert result.text == "Title\n\nEnergy is $E = mc^2$."
+    assert result.text == "Title\n\nEnergy is $E=mc^2$."
 
 
 def test_text_mode_vision_failure_falls_back(fake_backend, image_file, monkeypatch):

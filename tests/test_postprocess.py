@@ -34,14 +34,14 @@ def test_collapse_whitespace_keeps_indent():
 
 def test_to_latex_strips_delimiters():
     assert pp.to_latex("$$\n\\frac{a}{b}\n$$") == "\\frac{a}{b}"
-    assert pp.to_latex("\\[ x^2 + y^2 = z^2 \\]") == "x^2 + y^2 = z^2"
+    assert pp.to_latex("\\[ x^2 + y^2 = z^2 \\]") == "x^2+y^2=z^2"
     assert pp.to_latex("$\\alpha$") == "\\alpha"
     assert pp.to_latex("```latex\n\\beta\n```") == "\\beta"
 
 
 def test_to_latex_strips_equation_env():
     raw = "\\begin{equation}\n  E = mc^2\n\\end{equation}"
-    assert pp.to_latex(raw) == "E = mc^2"
+    assert pp.to_latex(raw) == "E=mc^2"
 
 
 def test_to_latex_keeps_matrix_env_and_joins_lines():
@@ -103,3 +103,30 @@ def test_clean_dispatch():
     assert pp.clean("\\(x\\)", "markdown") == "$x$"
     assert pp.clean("**a**", "text") == "a"
     assert pp.clean("| a |\n| --- |", "table", "csv") == "a"
+
+
+def test_tidy_latex_glm_spacing():
+    raw = r"\int_ {- \infty} ^ {\infty} e ^ {- a x ^ {2} + b x} d x = \sqrt {\frac {\pi}{a}}"
+    assert (
+        pp.tidy_latex(raw) == r"\int_{-\infty}^{\infty} e^{-a x^{2}+b x} d x=\sqrt{\frac{\pi}{a}}"
+    )
+
+
+def test_tidy_latex_keeps_command_boundaries():
+    assert pp.tidy_latex(r"\sin x + \alpha \beta") == r"\sin x+\alpha \beta"
+    assert pp.tidy_latex(r"a \\ b") == r"a \\ b"
+    assert pp.tidy_latex(r"a&b") == r"a&b"
+    assert pp.tidy_latex(r"x \, d y") == r"x\,d y"
+
+
+def test_tidy_latex_keeps_text_spaces():
+    assert pp.tidy_latex(r"x = 1 \text {if  x is odd}") == r"x=1 \text{if x is odd}"
+
+
+def test_markdown_tidies_math_spans():
+    raw = r"Let $ x ^ {2} $ and $$ \frac {a}{b} $$ hold."
+    assert pp.to_markdown(raw) == r"Let $x^{2}$ and $$\frac{a}{b}$$ hold."
+
+
+def test_latex_mode_tidies():
+    assert pp.to_latex("$$\n\\frac {a + b}{c - d}\n$$") == r"\frac{a+b}{c-d}"

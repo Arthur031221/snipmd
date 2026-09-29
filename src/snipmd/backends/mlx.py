@@ -51,6 +51,18 @@ class MlxBackend:
             return False, f"{self.model_id} not downloaded yet. Run `snipmd pull`."
         return True, self.model_id
 
+    def cached_path(self) -> Path | None:
+        """Local snapshot folder, found without touching the network."""
+        local = self._local_path()
+        if local:
+            return local
+        try:
+            from huggingface_hub import snapshot_download
+
+            return Path(snapshot_download(self.model_id, local_files_only=True))
+        except Exception:
+            return None
+
     def pull(self) -> Path:
         if self._local_path():
             return self._local_path()  # type: ignore[return-value]
@@ -68,8 +80,11 @@ class MlxBackend:
                 raise BackendUnavailable("mlx-vlm is not installed. Run `pip install mlx-vlm`.")
             from mlx_vlm import load
 
+            # Load from the local snapshot when there is one. Passing the repo
+            # id makes huggingface_hub check for updates online on every start.
+            source = self.cached_path() or self.model_id
             try:
-                self._model, self._processor = load(str(self._local_path() or self.model_id))
+                self._model, self._processor = load(str(source))
             except Exception as exc:
                 raise BackendError(f"could not load {self.model_id}: {exc}") from exc
             self._config = getattr(self._model, "config", None)

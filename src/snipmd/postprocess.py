@@ -75,6 +75,77 @@ def collapse_whitespace(text: str) -> str:
     return out.strip()
 
 
+_LATEX_TOKEN = re.compile(r"\\[A-Za-z]+|\\.|\s+|.", re.DOTALL)
+_TEXT_COMMANDS = {"\\text", "\\textrm", "\\textbf", "\\textit", "\\textsf", "\\mbox"}
+
+
+def _wordish(tok: str) -> bool:
+    return tok[:1].isalnum() or (tok.startswith("\\") and tok[1:2].isalpha())
+
+
+def _keep_space(prev: str, nxt: str) -> bool:
+    if prev in ("&", "\\\\") or nxt in ("&", "\\\\"):
+        return True
+    return (_wordish(prev) or prev == "}") and _wordish(nxt)
+
+
+def tidy_latex(latex: str) -> str:
+    """Drop the token spacing GLM-OCR emits, e.g. ``\\frac {a + b}{c}``.
+
+    Math mode ignores spaces, so this never changes the rendering. The result
+    reads like hand-written LaTeX: no spaces around braces, scripts and
+    operators, one space between words (``\\sin x``, ``} e``) and around
+    ``&`` and ``\\\\``. A space between a command and a letter is never
+    removed, since that would merge them. Spaces inside ``\\text{...}`` stay.
+    """
+    tokens = _LATEX_TOKEN.findall(latex)
+    out: list[str] = []
+    text_depth: list[int] = []
+    depth = 0
+    pending_text = False
+    for i, tok in enumerate(tokens):
+        if tok.isspace():
+            if text_depth:
+                out.append(" ")
+                continue
+            prev = out[-1] if out else ""
+            nxt = next((t for t in tokens[i + 1 :] if not t.isspace()), "")
+            if prev and nxt and _keep_space(prev, nxt):
+                out.append(" ")
+            continue
+        if tok in _TEXT_COMMANDS:
+            pending_text = True
+        elif tok == "{":
+            depth += 1
+            if pending_text:
+                text_depth.append(depth)
+            pending_text = False
+        elif tok == "}":
+            if text_depth and text_depth[-1] == depth:
+                text_depth.pop()
+            depth -= 1
+        elif pending_text and not tok.isspace():
+            pending_text = False
+        out.append(tok)
+    return "".join(out).strip()
+
+
+def tidy_math_spans(text: str) -> str:
+    """Apply :func:`tidy_latex` inside every ``$...$`` and ``$$...$$`` span."""
+    text = re.sub(
+        r"\$\$(.+?)\$\$", lambda m: f"$${tidy_latex(m.group(1))}$$", text, flags=re.DOTALL
+    )
+    parts = re.split(r"(\$\$.*?\$\$)", text, flags=re.DOTALL)
+    for i, part in enumerate(parts):
+        if not part.startswith("$$"):
+            parts[i] = re.sub(
+                r"(?<![\\$])\$(?!\$)([^$\n]+?)(?<!\\)\$(?!\$)",
+                lambda m: f"${tidy_latex(m.group(1))}$",
+                part,
+            )
+    return "".join(parts)
+
+
 _WRAPPERS = ("equation", "equation*", "displaymath", "math")
 
 
@@ -102,7 +173,7 @@ def to_latex(text: str) -> str:
         eqs = [_strip_one(b) for b in blocks if b.strip()]
     else:
         eqs = [_strip_one(text)]
-    eqs = [re.sub(r"\s+", " ", e).strip() for e in eqs if e.strip()]
+    eqs = [tidy_latex(e) for e in eqs if e.strip()]
     if not eqs:
         return ""
     if len(eqs) == 1:
@@ -206,7 +277,7 @@ def to_table(text: str, fmt: str = "markdown") -> str:
     if not rows:
         # Not a table after all. Hand back the cleaned text rather than nothing.
         return to_markdown(text)
-    rows = [[normalize_delimiters(c) for c in r] for r in rows]
+    rows = [[tidy_math_spans(normalize_delimiters(c)) for c in r] for r in rows]
     return rows_to_csv(rows) if fmt == "csv" else rows_to_markdown(rows)
 
 
@@ -219,7 +290,7 @@ def to_markdown(text: str) -> str:
             text,
             flags=re.DOTALL | re.IGNORECASE,
         )
-    text = normalize_delimiters(text)
+    text = tidy_math_spans(normalize_delimiters(text))
     return collapse_whitespace(text)
 
 
