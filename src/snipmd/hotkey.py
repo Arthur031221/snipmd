@@ -75,5 +75,7 @@ def to_pynput(text: str) -> str:
 
 
 def pretty(text: str) -> str:
+    """Human form in the order people say it on a Mac: cmd+shift+2."""
     mods, key = parse_hotkey(text)
-    return "+".join([*mods, key])
+    spoken = ["cmd", "ctrl", "alt", "shift"]
+    return "+".join([*sorted(mods, key=spoken.index), key])

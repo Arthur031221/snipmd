@@ -9,7 +9,8 @@ def test_hotkey_conversion():
     assert to_pynput("cmd+shift+2") == "<shift>+<cmd>+2"
     assert to_pynput("Command + Option + L") == "<alt>+<cmd>+l"
     assert to_pynput("<ctrl>+<alt>+<space>") == "<ctrl>+<alt>+<space>"
-    assert pretty("shift+cmd+2") == "shift+cmd+2"
+    assert pretty("shift+cmd+2") == "cmd+shift+2"
+    assert pretty("<alt>+<ctrl>+m") == "ctrl+alt+m"
 
 
 @pytest.mark.parametrize("bad", ["", "2", "cmd+shift", "cmd+a+b", "cmd+enterx"])

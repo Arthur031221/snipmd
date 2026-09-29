@@ -37,6 +37,23 @@ def _has_bundle_id() -> bool:
         return False
 
 
+def _input_trusted() -> bool:
+    """True when macOS lets this process watch global key events.
+
+    Passing the prompt option makes macOS show its permission dialog the
+    first time, which is friendlier than a silent dead hotkey.
+    """
+    try:
+        import HIServices
+    except ImportError:
+        return True
+    try:
+        options = {HIServices.kAXTrustedCheckOptionPrompt: True}
+        return bool(HIServices.AXIsProcessTrustedWithOptions(options))
+    except AttributeError:
+        return bool(HIServices.AXIsProcessTrusted())
+
+
 class SnipApp(rumps.App):
     def __init__(self, cfg: Config, backend: str | None = None):
         icon = resources.files("snipmd").joinpath("assets", "icon.png")
@@ -163,12 +180,12 @@ class SnipApp(rumps.App):
         self.listener = keyboard.GlobalHotKeys({combo: self._on_hotkey})
         self.listener.daemon = True
         self.listener.start()
-        if getattr(self.listener, "IS_TRUSTED", True) is False:
+        if not _input_trusted():
             self.events.put(
                 (
                     "error",
-                    "The hotkey needs Input Monitoring permission for this terminal. "
-                    "The Snip menu item works without it.",
+                    "The hotkey needs Accessibility or Input Monitoring permission for this "
+                    "terminal. Grant it, then restart snipmd. The Snip menu item works now.",
                 )
             )
 
