@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Models and caches
+*.safetensors
+*.gguf
+*.bin
+models/
+.cache/
+
+# Benchmark scratch output (the summary JSON and figures are committed)
+bench/out/
+bench/.tex/
+
+# macOS
+.DS_Store
