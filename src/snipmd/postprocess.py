@@ -53,7 +53,12 @@ def trim_repetition(text: str, max_unit: int = 400) -> str | None:
             continue
         unit = text[n - p :]
         if unit.strip() and text.endswith(unit * reps):
-            return text[: n - p * (reps - 1)]
+            # Walk back to where the loop began and keep exactly one period
+            # from there, so the kept copy starts where the model started it.
+            start = n - p * reps
+            while start > 0 and text[start - 1] == text[start - 1 + p]:
+                start -= 1
+            return text[: start + p]
     return None
 
 
@@ -197,6 +202,8 @@ def to_latex(text: str) -> str:
     text = strip_code_fences(drop_empty_fences(text))
     text = normalize_delimiters(text)
     blocks = [b.strip() for b in re.findall(r"\$\$(.*?)\$\$", text, flags=re.DOTALL)]
+    # A model that loops repeats the same block. Keep one copy.
+    blocks = [b for i, b in enumerate(blocks) if i == 0 or b != blocks[i - 1]]
     leftover = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL).strip()
     if blocks and not leftover:
         eqs = [_strip_one(b) for b in blocks if b.strip()]

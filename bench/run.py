@@ -102,7 +102,9 @@ def cmd_accuracy(args: argparse.Namespace) -> None:
     for item in items:
         result = eng.run(Path(item["image"]), "latex")
         s = score(result.text, item["truth"])
-        rows.append({**item, "pred": result.text, "seconds": round(result.seconds, 3)})
+        rows.append(
+            {**item, "pred": result.text, "raw": result.raw, "seconds": round(result.seconds, 3)}
+        )
         mark = "ok " if s["exact"] else "   "
         print(f"{mark} eq{item['id']:02d} cer={s['cer']:.3f}  {result.text}", file=sys.stderr)
 

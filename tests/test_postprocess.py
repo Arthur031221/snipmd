@@ -135,7 +135,7 @@ def test_latex_mode_tidies():
 def test_trim_repetition():
     block = "$$\n\\frac{a}{b}\n$$\n"
     assert pp.trim_repetition(block * 3) == block
-    assert pp.trim_repetition("x = 1\n" + "```\n" * 5) == "x = 1\n```\n"
+    assert pp.trim_repetition("x = 1\n" + "```\n" * 5) == "x = 1\n```"
     assert pp.trim_repetition("abc") is None
 
 
@@ -148,3 +148,13 @@ def test_trim_repetition_leaves_honest_repeats():
 def test_drop_empty_fences():
     assert pp.drop_empty_fences("$x$\n```markdown\n\n```\nmore") == "$x$\nmore"
     assert pp.drop_empty_fences("text\n```") == "text\n"
+
+
+def test_trim_repetition_keeps_first_copy_when_cut_mid_block():
+    block = "$$\n\\frac{a}{b}\n$$\n"
+    text = block * 4 + "$$\n\\fr"
+    assert pp.trim_repetition(text) == block
+
+
+def test_to_latex_dedupes_repeated_blocks():
+    assert pp.to_latex("$$x$$\n$$x$$\n$$y$$") == "\\begin{gathered} x \\\\ y \\end{gathered}"
