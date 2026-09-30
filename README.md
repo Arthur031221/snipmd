@@ -206,6 +206,12 @@ uv run --group bench python bench/run.py latency --backend mlx -n 20
 
 **Disk and memory.** The 8-bit MLX weights are 1.6 GB on disk. The Ollama `glm-ocr:q8_0` tag is also 1.6 GB.
 
+## Related projects
+
+- [songforge](https://github.com/Arthur031221/songforge): Another local MLX app, song generation instead of OCR, the same one-command-and-it-runs shape.
+- [mlxtrace](https://github.com/Arthur031221/mlxtrace): Profiles MLX step timing if you train or fine-tune a model. snipmd is a consumer of the same MLX stack at inference time.
+- [receiptwise](https://github.com/Arthur031221/receiptwise): Uses the same GLM-OCR model on a different document, a receipt instead of a snipped equation.
+
 ## Contributing
 
 Bug reports with the image you snipped are the most useful thing you can send. See [CONTRIBUTING.md](CONTRIBUTING.md). Tests run without a model: `uv run pytest`.
