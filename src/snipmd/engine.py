@@ -42,7 +42,7 @@ def prepare_image(src: Path, workdir: Path) -> Path:
     may be under 100 px tall. Both hurt recognition. White padding and a
     modest integer upscale fix most of it.
     """
-    from PIL import Image, UnidentifiedImageError
+    from PIL import Image, ImageOps, UnidentifiedImageError
 
     try:
         img = Image.open(src)
@@ -52,6 +52,7 @@ def prepare_image(src: Path, workdir: Path) -> Path:
     except (UnidentifiedImageError, OSError) as exc:
         raise InputError(f"not an image snipmd can read: {src}") from exc
 
+    img = ImageOps.exif_transpose(img)
     if img.mode in ("RGBA", "LA", "P"):
         img = img.convert("RGBA")
         bg = Image.new("RGB", img.size, "white")

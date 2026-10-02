@@ -22,6 +22,16 @@ def test_prepare_flattens_transparency(tmp_path):
     assert out.getpixel((300, 100)) == (255, 255, 255)
 
 
+def test_prepare_applies_exif_orientation(tmp_path):
+    src = tmp_path / "phone.jpg"
+    exif = Image.Exif()
+    exif[274] = 6  # Rotate 90 degrees clockwise for display.
+    Image.new("RGB", (120, 60), "white").save(src, exif=exif)
+
+    out = Image.open(prepare_image(src, tmp_path))
+    assert out.height > out.width
+
+
 def test_prepare_shrinks_huge_image(tmp_path):
     src = tmp_path / "big.png"
     Image.new("RGB", (6000, 1000), "white").save(src)
