@@ -2,15 +2,15 @@
 
 Press a hotkey, drag a box, get Markdown, LaTeX or a table on your clipboard. Free, offline, runs the 0.9B GLM-OCR model on your Mac.
 
+![A textbook equation becomes LaTeX](demo/snip.gif)
+
+<sub>The page is a TeX render and the selection overlay is drawn, because a screen recording needs a hand on the mouse. The LaTeX and the 2.13 s in the notification are the real output of the model on that crop, recorded by `demo/record.py`.</sub>
+
 On 48 printed equations (fractions, integrals, matrices, sums, Greek, cases), snipmd returned LaTeX that matches the source for all 48, with a median of 0.5 s from mouse release to clipboard on a MacBook Air M5.[^bench]
 
 [![CI](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/snipmd.svg)](https://pypi.org/project/snipmd/)
-
-![A textbook equation becomes LaTeX](demo/snip.gif)
-
-<sub>The page is a TeX render and the selection overlay is drawn, because a screen recording needs a hand on the mouse. The LaTeX and the 2.13 s in the notification are the real output of the model on that crop, recorded by `demo/record.py`.</sub>
 
 ## Why
 
@@ -55,7 +55,7 @@ ollama pull glm-ocr:q8_0
 snipmd page.png --backend ollama
 ```
 
-![CLI demo](demo/demo.gif)
+![snipmd terminal checks the OCR backend, then converts a page to LaTeX](demo/demo.gif)
 
 ## Modes
 
