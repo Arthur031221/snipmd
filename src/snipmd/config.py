@@ -25,6 +25,9 @@ def home() -> Path:
         return Path(env).expanduser()
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Application Support" / "snipmd"
+    if sys.platform == "win32":
+        base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+        return Path(base) / "snipmd"
     base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
     return Path(base) / "snipmd"
 

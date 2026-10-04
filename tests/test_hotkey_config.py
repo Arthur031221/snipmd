@@ -24,6 +24,13 @@ def test_home_override(snip_home):
     assert config.config_path() == snip_home / "config.toml"
 
 
+def test_home_uses_windows_appdata(monkeypatch, tmp_path):
+    monkeypatch.delenv("SNIPMD_HOME", raising=False)
+    monkeypatch.setenv("APPDATA", str(tmp_path / "Roaming"))
+    monkeypatch.setattr(config.sys, "platform", "win32")
+    assert config.home() == tmp_path / "Roaming" / "snipmd"
+
+
 def test_defaults_when_missing():
     cfg = config.load()
     assert cfg.mode == "markdown"

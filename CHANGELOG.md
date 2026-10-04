@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
+- Store Windows settings and history under the user's roaming application data directory.
 - Apply JPEG EXIF orientation before preparing images for OCR.
 
 ## [0.1.0] - 2026-09-30
