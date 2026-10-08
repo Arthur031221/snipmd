@@ -89,7 +89,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
-            length = 0
+            self._error(HTTPStatus.BAD_REQUEST, "Content-Length must be a non-negative integer")
+            return None
+        if length < 0:
+            self._error(HTTPStatus.BAD_REQUEST, "Content-Length must be a non-negative integer")
+            return None
         if length > MAX_BODY:
             self._error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "image larger than 25 MB")
             return None

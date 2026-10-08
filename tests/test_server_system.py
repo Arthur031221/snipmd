@@ -1,5 +1,6 @@
 import base64
 import json
+import socket
 import stat
 import threading
 import urllib.error
@@ -62,6 +63,20 @@ def test_ocr_errors(api, image_file):
     bad_json = call(api + "/ocr", b"{", {"Content-Type": "application/json"})
     assert bad_json[0] == 400
     assert call(api + "/nope")[0] == 404
+
+
+@pytest.mark.parametrize("length", ["-1", "not-a-number"])
+def test_ocr_rejects_invalid_content_length(api, length):
+    host, port = api.removeprefix("http://").split(":")
+    with socket.create_connection((host, int(port)), timeout=2) as client:
+        client.sendall(
+            f"POST /ocr HTTP/1.1\r\nHost: {host}:{port}\r\n"
+            f"Content-Length: {length}\r\nConnection: close\r\n\r\n".encode()
+        )
+        with client.makefile("rb") as response_file:
+            response = response_file.read()
+    assert response.startswith(b"HTTP/1.0 400")
+    assert b"Content-Length must be a non-negative integer" in response
 
 
 def test_cross_origin_refused(api, image_file):
