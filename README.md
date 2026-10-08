@@ -1,4 +1,4 @@
-# snipmd
+# SnipMD
 
 Press a hotkey, drag a box, get Markdown, LaTeX or a table on your clipboard. Free, offline, runs the 0.9B GLM-OCR model on your Mac.
 
@@ -6,9 +6,9 @@ Press a hotkey, drag a box, get Markdown, LaTeX or a table on your clipboard. Fr
 
 <sub>The page is a TeX render and the selection overlay is drawn, because a screen recording needs a hand on the mouse. The LaTeX and the 2.13 s in the notification are the real output of the model on that crop, recorded by `demo/record.py`.</sub>
 
-On 48 printed equations (fractions, integrals, matrices, sums, Greek, cases), snipmd returned LaTeX that matches the source for all 48, with a median of 0.5 s from mouse release to clipboard on a MacBook Air M5.[^bench]
+On 48 printed equations (fractions, integrals, matrices, sums, Greek, cases), SnipMD returned LaTeX that matches the source for all 48, with a median of 0.5 s from mouse release to clipboard on a MacBook Air M5.[^bench]
 
-[![CI](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/snipmd/actions/workflows/ci.yml)
+[![CI](https://github.com/Arthur031221/SnipMD/actions/workflows/ci.yml/badge.svg)](https://github.com/Arthur031221/SnipMD/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/snipmd.svg)](https://pypi.org/project/snipmd/)
 
@@ -21,16 +21,16 @@ Copying an equation out of a PDF or a lecture slide means retyping it by hand. M
 Not on PyPI yet. Install straight from GitHub:
 
 ```sh
-uv tool install git+https://github.com/Arthur031221/snipmd
+uv tool install git+https://github.com/Arthur031221/SnipMD
 ```
 
 or run it once without installing:
 
 ```sh
-uvx --from git+https://github.com/Arthur031221/snipmd snipmd
+uvx --from git+https://github.com/Arthur031221/SnipMD snipmd
 ```
 
-Once published, `uvx snipmd` or `pipx install snipmd` will work the same way. On Apple Silicon this installs mlx-vlm and runs the model in process. On other machines snipmd uses [Ollama](https://ollama.com).
+Once published, `uvx snipmd` or `pipx install snipmd` will work the same way. On Apple Silicon this installs mlx-vlm and runs the model in process. On other machines SnipMD uses [Ollama](https://ollama.com).
 
 ## Quick start
 
@@ -55,7 +55,7 @@ ollama pull glm-ocr:q8_0
 snipmd page.png --backend ollama
 ```
 
-![snipmd terminal checks the OCR backend, then converts a page to LaTeX](demo/demo.gif)
+![SnipMD terminal checks the OCR backend, then converts a page to LaTeX](demo/demo.gif)
 
 ## Modes
 
@@ -98,7 +98,7 @@ Plain text mode skips the model and uses Apple Vision (`VNRecognizeTextRequest`)
 
 ## Compared with
 
-| | snipmd | [Mathpix Snip](https://mathpix.com/snipping-tool) | [LaTeX-OCR](https://github.com/lukas-blecher/LaTeX-OCR) | [Pix2Text](https://github.com/breezedeus/Pix2Text) | [OpenMathpix](https://github.com/JhuoW/OpenMathpix) |
+| | SnipMD | [Mathpix Snip](https://mathpix.com/snipping-tool) | [LaTeX-OCR](https://github.com/lukas-blecher/LaTeX-OCR) | [Pix2Text](https://github.com/breezedeus/Pix2Text) | [OpenMathpix](https://github.com/JhuoW/OpenMathpix) |
 | --- | --- | --- | --- | --- | --- |
 | Price | Free, MIT | 10 snips a month free, Pro $4.99 a month[^price] | Free, MIT | Free, MIT | Free |
 | Runs offline | Yes | No, cloud | Yes | Yes | No, calls Baidu AIStudio |
@@ -108,7 +108,7 @@ Plain text mode skips the model and uses Apple Vision (`VNRecognizeTextRequest`)
 | Last commit | 2026 | closed source | 2025-01-18 | 2026-08 | 2026-03 |
 | GitHub stars (2026-09-29) | new | n/a | 16.6k | 3.3k | 6 |
 
-Mathpix is the most polished of these and handles handwriting, PDFs and a phone app. snipmd does not. LaTeX-OCR has a snipping GUI but a smaller model that only sees single equations. Pix2Text is a strong library with layout analysis, and a good choice if you want a Python API more than a hotkey.
+Mathpix is the most polished of these and handles handwriting, PDFs and a phone app. SnipMD does not. LaTeX-OCR has a snipping GUI but a smaller model that only sees single equations. Pix2Text is a strong library with layout analysis, and a good choice if you want a Python API more than a hotkey.
 
 ## Commands
 
@@ -171,7 +171,7 @@ Responses are JSON: `{"text", "raw", "mode", "backend", "seconds", "id"}`. An ed
 
 ## Benchmark
 
-`bench/` renders 48 equations with a real TeX engine (tectonic), runs each image through snipmd in latex mode, and scores the output. Normalisation removes whitespace, `\,`, `\left` and `\right`, and braces around a single script token. "Equivalent" additionally maps constructs that print the same: an `array` inside parentheses and `pmatrix`, `\{ array \right.` and `cases`, `^{\prime}` and `'`, `\mathrm{max}` and `\max`. The rules are in `bench/metrics.py` and tested.
+`bench/` renders 48 equations with a real TeX engine (tectonic), runs each image through SnipMD in latex mode, and scores the output. Normalisation removes whitespace, `\,`, `\left` and `\right`, and braces around a single script token. "Equivalent" additionally maps constructs that print the same: an `array` inside parentheses and `pmatrix`, `\{ array \right.` and `cases`, `^{\prime}` and `'`, `\mathrm{max}` and `\max`. The rules are in `bench/metrics.py` and tested.
 
 | Backend | Render scale | Exact | Equivalent | CER | Median per equation |
 | --- | --- | --- | --- | --- | --- |
@@ -181,7 +181,7 @@ Responses are JSON: `{"text", "raw", "mode", "backend", "seconds", "id"}`. An ed
 
 All 10 exact-match misses on MLX are notation choices: six matrices written as `\left(\begin{array}...` instead of `pmatrix`, one `cases`, two `f^{\prime}`, one `\mathrm{max}`. Every MLX output also parses without errors in KaTeX 0.18.9 (`node bench/katex_check.cjs`).
 
-The Ollama build of glm-ocr (Ollama 0.34.4) does not stop at its end token and repeats its answer until the token limit. snipmd reads the stream and cuts the loop, which keeps it usable, but one answer still came back as two different copies and each snip is slower. Use MLX on a Mac.
+The Ollama build of glm-ocr (Ollama 0.34.4) does not stop at its end token and repeats its answer until the token limit. SnipMD reads the stream and cuts the loop, which keeps it usable, but one answer still came back as two different copies and each snip is slower. Use MLX on a Mac.
 
 End to end, 20 snips from PNG on disk to text on the clipboard (prepare, recognise, post-process, `pbcopy`, history write) took a median of 0.50 s, p90 0.62 s, with the model already loaded. An earlier run of the same 20 snips while another MLX job was busy on the GPU gave a median of 1.40 s, p90 2.07 s (`bench/results/latency-mlx-busy-gpu.json`). The first snip after loading is slower because kernels compile on first use. Loading the model took between 3 and 15 s across the runs, depending on what else was using the machine.[^bench]
 
@@ -196,7 +196,7 @@ uv run --group bench python bench/run.py latency --backend mlx -n 20
 
 **Very small text.** Small crops are upscaled before recognition, and the 1x run above (12 pt text rasterised at 1 pixel per point) still scored 48/48. Smaller than that was not measured.
 
-**Whole multi-column pages.** snipmd sends your crop to the model as one image. It does not run the layout analysis that the official GLM-OCR SDK uses for full documents, so a two-column page can come back in the wrong reading order. Snip one column at a time.
+**Whole multi-column pages.** SnipMD sends your crop to the model as one image. It does not run the layout analysis that the official GLM-OCR SDK uses for full documents, so a two-column page can come back in the wrong reading order. Snip one column at a time.
 
 **Intel Macs, Linux, Windows.** MLX needs Apple Silicon. Everywhere else use `--backend ollama`. The menu bar app and crosshair capture are macOS only. `snipmd FILE` and `snipmd serve` work anywhere Python and Ollama run.
 
@@ -209,7 +209,7 @@ uv run --group bench python bench/run.py latency --backend mlx -n 20
 ## Related projects
 
 - [songforge](https://github.com/Arthur031221/songforge): Another local MLX app, song generation instead of OCR, the same one-command-and-it-runs shape.
-- [mlxtrace](https://github.com/Arthur031221/mlxtrace): Profiles MLX step timing if you train or fine-tune a model. snipmd is a consumer of the same MLX stack at inference time.
+- [mlxtrace](https://github.com/Arthur031221/mlxtrace): Profiles MLX step timing if you train or fine-tune a model. SnipMD is a consumer of the same MLX stack at inference time.
 - [receiptwise](https://github.com/Arthur031221/receiptwise): Uses the same GLM-OCR model on a different document, a receipt instead of a snipped equation.
 
 ## Contributing
