@@ -223,3 +223,5 @@ MIT. See [LICENSE](LICENSE). GLM-OCR is MIT licensed by Z.ai. KaTeX, bundled for
 [^bench]: Method: 48 equations from `bench/equations.py` rendered with tectonic 0.17 at 12 pt, rasterised at 2 pixels per point, recognised in latex mode by `mlx-community/GLM-OCR-8bit` through mlx-vlm 0.7.4 on a MacBook Air M5 with 24 GB, macOS 26.6, 2026-09-30. "Matches" means equal after the normalisation and equivalence rules in `bench/metrics.py`. 38 of 48 were equal without the equivalence rules. Latency: 20 runs of the hotkey code path minus the drag, from a PNG on disk to `pbcopy` done, model already loaded, same machine and date. Other builds were running on the machine throughout, so the accuracy timings in particular are not from an idle system. Raw results are in `bench/results/`.
 
 [^price]: Mathpix Snip pricing page, https://mathpix.com/pricing/snip, read 2026-09-30: Free plan 10 images and 10 PDF pages a month, Pro $4.99 a month or $49.90 billed yearly.
+
+Assisted by Claude/Codex.
